@@ -7,20 +7,30 @@ job "example" {
 
       config {
         image = "ghcr.io/simnalamburt/sample-redis-app:1.0.0"
-
-        port_map {
-          http = 5000
-        }
       }
+    }
 
-      resources {
-        network {
-          port "http" {}
-        }
+    network {
+      mode = "bridge"
+      port "http" {
+        static = 5000
+        to     = 5000
       }
+    }
 
-      service {
-        port = "http"
+    service {
+      name = "web"
+      port = "5000"
+
+      connect {
+        sidecar_service {
+          proxy {
+            upstreams {
+              destination_name = "cache"
+              local_bind_port = 6379
+            }
+          }
+        }
       }
     }
   }
@@ -31,20 +41,19 @@ job "example" {
 
       config {
         image = "redis:3.2"
-
-        port_map {
-          db = 6379
-        }
       }
+    }
 
-      resources {
-        network {
-          port "db" {}
-        }
-      }
+    network {
+      mode = "bridge"
+    }
 
-      service {
-        port = "db"
+    service {
+      name = "cache"
+      port = "6379"
+
+      connect {
+        sidecar_service {}
       }
     }
   }
